@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Data Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stock Data Viewer</h1>
+        <div>
+            <h2>Available Stock Tickers</h2>
+            <button id="fetchTickers">Fetch Tickers</button>
+            <ul id="tickersList"></ul>
+        </div>
+        <div>
+            <h2>Get Stock Data</h2>
+            <label for="tickerInput">Ticker:</label>
+            <input type="text" id="tickerInput" placeholder="Enter ticker (e.g., AAPL)">
+            <label for="dateInput">Date (optional):</label>
+            <input type="date" id="dateInput">
+            <button id="fetchStockData">Fetch Stock Data</button>
+            <div id="stockData"></div>
+        </div>
+        <div class="error" id="errorMessage"></div>
+    </div>
+
+    <script>
+        const BASE_URL = "http://127.0.0.1:5000";
+
+        // Fetch all stock tickers
+        document.getElementById('fetchTickers').addEventListener('click', async () => {
+            const tickersList = document.getElementById('tickersList');
+            const errorMessage = document.getElementById('errorMessage');
+            tickersList.innerHTML = '';
+            errorMessage.textContent = '';
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/stocks`);
+                console.log(response.status);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                if (response.ok) {
+                    const data = await response.json();
+                    data.tickers.forEach(ticker => {
+                        const li = document.createElement('li');
+                        li.textContent = ticker;
+                        tickersList.appendChild(li);
+                    });
+                } else {
+                    const errorData = await response.json();
+                    errorMessage.textContent = `Error: ${errorData.error}`;
+                }
+            } catch (error) {
+                errorMessage.textContent = `An error occurred: ${error.message}`;
+            }
+        });
+
+        // Fetch stock data for a specific ticker
+        document.getElementById('fetchStockData').addEventListener('click', async () => {
+            const ticker = document.getElementById('tickerInput').value.trim();
+            const date = document.getElementById('dateInput').value;
+            const stockDataDiv = document.getElementById('stockData');
+            const errorMessage = document.getElementById('errorMessage');
+            stockDataDiv.innerHTML = '';
+            errorMessage.textContent = '';
+
+            if (!ticker) {
+                errorMessage.textContent = 'Please enter a ticker.';
+                return;
+            }
+
+            try {
+                const url = new URL(`${BASE_URL}/api/stock/${ticker}`);
+                if (date) {
+                    url.searchParams.append('date', date);
+                }
+
+                const response = await fetch(url);
+                if (response.ok) {
+                    const data = await response.json();
+                    stockDataDiv.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    const errorData = await response.json();
+                    errorMessage.textContent = `Error: ${errorData.error}`;
+                }
+            } catch (error) {
+                errorMessage.textContent = `An error occurred: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
